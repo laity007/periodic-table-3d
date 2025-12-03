@@ -237,7 +237,7 @@
 
         .modal-content {
             width: 90%;
-            max-width: 900px;
+            max-width: 950px; /* Slight increase for extra fields */
             height: 550px;
             background: rgba(15, 18, 27, 0.85);
             border: 1px solid rgba(255,255,255,0.1);
@@ -273,6 +273,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            cursor: crosshair; /* Hint at interactivity */
         }
         
         /* Canvas for 2D Atom */
@@ -321,6 +322,12 @@
         }
         .data-item label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px; }
         .data-item span { font-size: 1.1rem; }
+
+        /* UPDATE: Styling for new valence fields */
+        .valence-data {
+            color: var(--modal-color);
+            font-weight: 600;
+        }
 
         .desc {
             margin-top: 10px;
@@ -404,6 +411,15 @@
                     <div class="data-item">
                         <label>Boiling Point</label>
                         <span id="m-boil">20.27 K</span>
+                    </div>
+                    <!-- UPDATE: New Valence Info Fields -->
+                    <div class="data-item">
+                        <label>Valence Electrons</label>
+                        <span id="m-valence" class="valence-data">1</span>
+                    </div>
+                    <div class="data-item">
+                        <label>Reactivity</label>
+                        <span id="m-reactivity" class="valence-data">High</span>
                     </div>
                 </div>
 
@@ -622,7 +638,7 @@
         grid.appendChild(elDiv);
     });
 
-    // --- FILTER LOGIC (FIXED) ---
+    // --- FILTER LOGIC (UNCHANGED) ---
     
     let currentFilter = 'all';
     let currentSearch = '';
@@ -633,28 +649,20 @@
         applyFilters();
     });
 
-    // FIX: All filter bug
-    // Updated filterElements to handle button active states and correctly set 'all'
     function filterElements(category, btn) {
         currentFilter = category;
         
-        // Update Buttons Visual State
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         if(btn) {
             btn.classList.add('active');
         } else {
-            // Fallback for "all" if passed manually
             const allBtn = document.querySelector(`[data-cat="all"]`);
             if (allBtn) allBtn.classList.add('active');
         }
         
-        // Trigger filter application
         applyFilters();
     }
 
-    // FIX: All filter bug
-    // Updated logic: if currentFilter is 'all', category matches are always true.
-    // Search is applied logically (AND) on top of the category filter.
     function applyFilters() {
         const allEls = document.querySelectorAll('.element');
         allEls.forEach(el => {
@@ -663,17 +671,12 @@
             const elSym = el.dataset.symbol;
             const elNum = el.dataset.number;
 
-            // 1. Check Category
             const matchesCat = (currentFilter === 'all' || elCat === currentFilter);
-
-            // 2. Check Search
-            // Empty search string returns true, otherwise checks inclusion
             const matchesSearch = (currentSearch === '') || 
                                   (elName.includes(currentSearch) || 
                                    elSym.includes(currentSearch) || 
                                    elNum === currentSearch);
 
-            // 3. Combine
             if (matchesCat && matchesSearch) {
                 el.classList.remove('dimmed');
             } else {
@@ -682,7 +685,6 @@
         });
     }
 
-    // Initialize "All" button logic
     document.querySelector('[data-cat="all"]').onclick = () => filterElements('all', document.querySelector('[data-cat="all"]'));
 
 
@@ -700,12 +702,24 @@
     const mMelt = document.getElementById('m-melt');
     const mBoil = document.getElementById('m-boil');
     const mDesc = document.getElementById('m-desc');
+    
+    // UPDATE: New DOM elements for valence info
+    const mValence = document.getElementById('m-valence');
+    const mReactivity = document.getElementById('m-reactivity');
 
-    // UPDATE: Atom rendering with shell model
-    // Simple capacity sequence; approximate is OK
+    // UPDATE: atomConfig and pseudo-3D atom rendering settings
+    const atomConfig = {
+        perspective: 0.6,          // vertical scale for y to make ellipses
+        baseRadius: 35,
+        radiusStep: 22,
+        maxShellsRendered: 6,      // degrade performance/clutter for heavy elements
+        showInnerElectrons: false, // if too many shells, hide inner electrons
+        highlightValence: true,
+        showReactivityRing: true
+    };
+
     const SHELL_CAPACITIES = [2, 8, 8, 18, 18, 32, 32]; 
 
-    // Helper to calculate shell distribution
     function getShellsFromAtomicNumber(atomicNumber) {
         let remaining = atomicNumber;
         const shells = [];
@@ -717,19 +731,25 @@
             remaining -= electronsInThisShell;
         }
 
-        return shells; // e.g. 17 → [2, 8, 7]
+        return shells;
     }
 
-    // Helper to decide if a shell is full
     function isShellFull(shellIndex, shells) {
         const electrons = shells[shellIndex];
         const capacity = SHELL_CAPACITIES[shellIndex];
         return electrons >= capacity;
     }
 
+    // UPDATE: Interaction logic
     let atomCanvas = document.getElementById('atom-canvas');
     let ctx = atomCanvas.getContext('2d');
     let animationId;
+    let isHoveringCanvas = false; // UPDATE: Track hover state
+
+    // Attach listeners
+    document.querySelector('.atom-visualizer').addEventListener('mouseenter', () => isHoveringCanvas = true);
+    document.querySelector('.atom-visualizer').addEventListener('mouseleave', () => isHoveringCanvas = false);
+
     let atomState = {
         shells: [],
         color: '#fff',
@@ -737,7 +757,6 @@
     };
 
     function openDetails(data) {
-        // Populate Data
         mSymbol.textContent = data.symbol;
         mNumber.textContent = data.number;
         mName.textContent = data.name;
@@ -748,12 +767,8 @@
         mBoil.textContent = data.boil ? data.boil + " K" : "N/A";
         mDesc.textContent = data.desc;
 
-        // Color theme for modal
+        // Color theme
         const color = categories[data.category] ? categories[data.category].color : '#fff';
-        // Need to resolve var() if possible, but for canvas we prefer hex/rgb. 
-        // We will pass the var string to canvas, it works in modern browsers for fillStyle if defined in :root
-        // But for manipulation (opacity), better to have a fallback.
-        
         document.querySelector('.modal-content').style.setProperty('--modal-color', color);
         mCat.style.background = "rgba(255,255,255,0.1)"; 
         mCat.style.color = color;
@@ -761,7 +776,23 @@
         // Show Modal
         modal.classList.add('active');
 
-        // Start 2D Atom Animation
+        // UPDATE: Valence info logic
+        const shells = getShellsFromAtomicNumber(data.number);
+        const valenceElectrons = shells[shells.length - 1];
+        const lastIndex = shells.length - 1;
+        const isFull = isShellFull(lastIndex, shells);
+        
+        mValence.textContent = valenceElectrons;
+        
+        let reactivityLabel = "Medium";
+        if (isFull) {
+            reactivityLabel = "Low (Stable)"; // Noble
+        } else if ([1, 2, 6, 7].includes(valenceElectrons)) {
+            reactivityLabel = "High";
+        }
+        mReactivity.textContent = reactivityLabel;
+
+        // Start Animation
         startAtomAnimation(data.number, color);
     }
 
@@ -775,12 +806,10 @@
         if (animationId) cancelAnimationFrame(animationId);
     }
 
-    // UPDATE: Atom rendering with shell model logic
     function startAtomAnimation(atomicNumber, cssColor) {
-        // Stop previous
         if (animationId) cancelAnimationFrame(animationId);
 
-        // Get computed color for Canvas use (resolves var(--...))
+        // Resolve Color
         const tempEl = document.createElement('div');
         tempEl.style.color = cssColor;
         document.body.appendChild(tempEl);
@@ -800,13 +829,18 @@
         animateAtomLoop();
     }
 
+    // UPDATE: Animation Loop with Hover check
     function animateAtomLoop() {
-        drawAtom();
-        atomState.angleOffset += 0.005; // Slow rotation speed
+        // Different rotation speed based on hover
+        const speed = isHoveringCanvas ? 0.001 : 0.005;
+        atomState.angleOffset += speed;
+        
+        drawAtom(atomConfig);
         animationId = requestAnimationFrame(animateAtomLoop);
     }
 
-    function drawAtom() {
+    // UPDATE: atomConfig and pseudo-3D atom rendering
+    function drawAtom(config) {
         const w = atomCanvas.width;
         const h = atomCanvas.height;
         const cx = w / 2;
@@ -815,77 +849,142 @@
         ctx.clearRect(0, 0, w, h);
 
         const shells = atomState.shells;
-        const baseRadius = 30;
-        const radiusStep = 25; // Space between rings
-
-        // Colors
-        const fullRingColor = '#303848';
-        const fullDotColor = '#707890';
-        const partialRingColor = atomState.color; // Neon theme
         
-        // Draw Nucleus
+        // Performance: Handle many shells
+        let shellsToDraw = shells;
+        let skipInnerElectrons = false;
+        
+        if (shells.length > config.maxShellsRendered) {
+            // If too many, maybe don't draw inner electrons
+            if (!config.showInnerElectrons) skipInnerElectrons = true;
+        }
+
+        const valenceIndex = shells.length - 1;
+        const valenceCount = shells[valenceIndex];
+        const isValenceFull = isShellFull(valenceIndex, shells);
+
+        // --- 1. Draw Nucleus ---
         ctx.beginPath();
-        ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+        ctx.arc(cx, cy, 6, 0, Math.PI * 2);
         ctx.fillStyle = '#fff';
         ctx.fill();
-        // Nucleus Glow
+        // Glow
         ctx.beginPath();
-        ctx.arc(cx, cy, 15, 0, Math.PI * 2);
+        ctx.arc(cx, cy, 12, 0, Math.PI * 2);
         ctx.fillStyle = atomState.color; 
-        ctx.globalAlpha = 0.3;
+        ctx.globalAlpha = 0.4;
         ctx.fill();
         ctx.globalAlpha = 1.0;
 
-
-        // Draw Shells
-        for (let i = 0; i < shells.length; i++) {
-            const electrons = shells[i];
-            const radius = baseRadius + (i * radiusStep);
-            const full = isShellFull(i, shells);
-
-            // 1. Draw Ring
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.lineWidth = 1.5;
+        // --- 2. Draw Shells (Ellipses) ---
+        for (let i = 0; i < shellsToDraw.length; i++) {
+            const electrons = shellsToDraw[i];
+            const isValence = (i === valenceIndex);
             
-            if (full) {
-                ctx.strokeStyle = fullRingColor;
-                ctx.shadowBlur = 0;
-            } else {
-                ctx.strokeStyle = partialRingColor;
-                ctx.shadowColor = partialRingColor;
-                ctx.shadowBlur = 10; // Glow for valence shell
+            // Adjust radius logic to fit canvas better for large atoms
+            // Flatten scale slightly if many shells
+            const scaleFactor = shells.length > 5 ? 0.8 : 1.0;
+            const radius = (config.baseRadius + (i * config.radiusStep)) * scaleFactor;
+            const full = isShellFull(i, shellsToDraw);
+
+            // COLORS
+            const ringColor = full && !isValence ? '#303848' : atomState.color;
+            const dotColor = full && !isValence ? '#707890' : atomState.color;
+            const shadowBlur = (isValence && !full) ? 15 : 0;
+
+            // DRAW ORBIT (ELLIPSE)
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, radius, radius * config.perspective, 0, 0, Math.PI * 2);
+            
+            ctx.lineWidth = isValence ? 2 : 1;
+            ctx.strokeStyle = ringColor;
+            
+            if (shadowBlur > 0) {
+                ctx.shadowColor = ringColor;
+                ctx.shadowBlur = shadowBlur;
             }
             ctx.stroke();
             ctx.shadowBlur = 0; // Reset
 
-            // 2. Draw Electrons
-            // Rotate rings slightly differently based on index for dynamic effect
-            const rotation = atomState.angleOffset * (i % 2 === 0 ? 1 : -1) * (1 + i * 0.2);
+            // Decide whether to draw electrons
+            // Skip inner electrons if flag is set, BUT always draw valence
+            if (skipInnerElectrons && !isValence && i < shells.length - 2) {
+                continue; 
+            }
+
+            // DRAW ELECTRONS
+            // Direction alternates per shell: even = +, odd = -
+            // Speed varies by distance
+            const speedFactor = (1 + i * 0.2);
+            const direction = (i % 2 === 0) ? 1 : -1;
+            const rotation = atomState.angleOffset * speedFactor * direction;
 
             for (let e = 0; e < electrons; e++) {
                 const angle = (2 * Math.PI * e) / electrons + rotation;
+                
+                // Elliptical Projection
                 const ex = cx + Math.cos(angle) * radius;
-                const ey = cy + Math.sin(angle) * radius;
+                const ey = cy + Math.sin(angle) * (radius * config.perspective);
+
+                // Z-Index illusion: 
+                // Simple radius check isn't perfect for 3D but size helps.
+                // We'll just draw them flat for now as requested.
+                
+                const dotSize = (isValence) ? 3.5 : 2; // Valence bigger
 
                 ctx.beginPath();
-                ctx.arc(ex, ey, full ? 2 : 3.5, 0, Math.PI * 2); // Larger dots for valence
-                ctx.fillStyle = full ? fullDotColor : partialRingColor;
+                ctx.arc(ex, ey, dotSize, 0, Math.PI * 2);
+                ctx.fillStyle = dotColor;
                 ctx.fill();
             }
 
-            // 3. Draw Label for Partial Shells
-            if (!full) {
-                const labelText = electrons + "e⁻";
-                // Fixed position for label (top of ring) to make it readable
-                // Or rotating with ring? Let's keep it static relative to ring top for readability
-                const labelY = cy - radius - 10;
-                
-                ctx.fillStyle = partialRingColor;
-                ctx.font = "12px sans-serif";
+            // LABEL (Valence only, or partials)
+            if (!full || isValence) {
+                const labelText = isValence ? `Valence: ${electrons}e⁻` : `${electrons}e⁻`;
+                // Position at "top" of ellipse (angle -PI/2)
+                const lx = cx; 
+                const ly = cy - (radius * config.perspective) - 12;
+
+                ctx.fillStyle = ringColor;
+                ctx.font = isValence ? "bold 12px sans-serif" : "10px sans-serif";
                 ctx.textAlign = "center";
-                ctx.fillText(labelText, cx, labelY);
+                ctx.fillText(labelText, lx, ly);
             }
+        }
+
+        // --- 3. Special Indicators ---
+        
+        // A) Stability Shield (For Noble Gases)
+        if (isValenceFull && valenceIndex > 0) { // >0 to skip Helium 1s check consistency if desired, but He is noble.
+             const outerRadius = (config.baseRadius + (valenceIndex * config.radiusStep)) * (shells.length > 5 ? 0.8 : 1.0) + 20;
+             ctx.beginPath();
+             ctx.ellipse(cx, cy, outerRadius, outerRadius * config.perspective, 0, 0, Math.PI * 2);
+             ctx.strokeStyle = '#ffffff';
+             ctx.lineWidth = 0.5;
+             ctx.globalAlpha = 0.3;
+             ctx.setLineDash([5, 5]);
+             ctx.stroke();
+             ctx.setLineDash([]);
+             ctx.globalAlpha = 1.0;
+        }
+
+        // B) Reactivity Ring (High Reactivity)
+        // Check for 1, 2, 6, 7 electrons in valence (and not noble/full)
+        if (config.showReactivityRing && !isValenceFull && [1, 2, 6, 7].includes(valenceCount)) {
+            const outerRadius = (config.baseRadius + (valenceIndex * config.radiusStep)) * (shells.length > 5 ? 0.8 : 1.0) + 15;
+            
+            // Pulsing effect
+            const pulse = 0.3 + Math.sin(atomState.angleOffset * 10) * 0.2; // 0.1 to 0.5 alpha
+            
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, outerRadius, outerRadius * config.perspective, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = atomState.color;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = pulse;
+            ctx.setLineDash([10, 10]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1.0;
         }
     }
 
@@ -895,7 +994,7 @@
             const container = document.getElementById('canvas-container');
             atomCanvas.width = container.clientWidth;
             atomCanvas.height = container.clientHeight;
-            drawAtom(); // Redraw immediately
+            drawAtom(atomConfig); 
         }
     });
 
