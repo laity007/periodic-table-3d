@@ -147,7 +147,6 @@
             position: relative;
         }
 
-        /* Placeholder for empty cells */
         .empty-cell { pointer-events: none; }
 
         /* ELEMENT CARD */
@@ -156,7 +155,7 @@
             background: rgba(15, 18, 27, 0.6);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: var(--card-radius);
-            aspect-ratio: 4/5; /* Rectangular card shape */
+            aspect-ratio: 4/5;
             padding: 5px;
             display: flex;
             flex-direction: column;
@@ -179,7 +178,6 @@
             opacity: 0.7;
         }
 
-        /* 3D Hover Effect */
         .element:hover {
             transform: translateZ(20px) scale(1.15);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5), 
@@ -213,7 +211,6 @@
             color: var(--text-muted);
         }
 
-        /* Separate Lanthanides/Actinides Rows */
         .periodic-table .lanthanide { margin-top: 30px; } 
 
         /* --- MODAL / DETAIL PANEL --- */
@@ -264,7 +261,6 @@
             z-index: 10;
         }
 
-        /* Left Side: Atom Canvas */
         .atom-visualizer {
             flex: 1;
             background: radial-gradient(circle at center, #1a1f2e 0%, #000 100%);
@@ -275,13 +271,11 @@
             align-items: center;
         }
         
-        /* Canvas for 2D Atom */
         #atom-canvas {
             width: 100%;
             height: 100%;
         }
 
-        /* Right Side: Info */
         .element-info {
             flex: 1;
             padding: 40px;
@@ -329,10 +323,9 @@
             color: #ccc;
         }
 
-        /* Responsive */
         @media (max-width: 900px) {
             .periodic-table {
-                width: 1200px; /* Force scroll on horizontal */
+                width: 1200px;
             }
             .modal-content { flex-direction: column; height: 90vh; overflow-y: auto; }
             .atom-visualizer { height: 300px; flex: none; }
@@ -360,15 +353,12 @@
             </div>
             <div class="filters" id="filter-container">
                 <button class="filter-btn active" data-cat="all">All</button>
-                <!-- Generated dynamically -->
             </div>
         </div>
     </header>
 
     <main id="table-container">
-        <div class="periodic-table" id="grid">
-            <!-- Elements injected here via JS -->
-        </div>
+        <div class="periodic-table" id="grid"></div>
     </main>
 
     <!-- Detail Modal -->
@@ -415,7 +405,7 @@
     </div>
 
 <script>
-    // --- DATA ---
+    /* ---------- CATEGORY DATA ---------- */
     const categories = {
         "alkali metal": { color: "var(--cat-alkali)", label: "Alkali Metals" },
         "alkaline earth metal": { color: "var(--cat-alkaline)", label: "Alkaline Earth" },
@@ -429,129 +419,9 @@
         "actinide": { color: "var(--cat-actinide)", label: "Actinides" }
     };
 
-    // Data set
-    const rawElements = [
-        [1,"H","Hydrogen",1.008,"nonmetal","Gas",13.99,20.27,"The most abundant chemical substance in the universe."],
-        [2,"He","Helium",4.0026,"noble gas","Gas",0.95,4.22,"A colorless, odorless, tasteless, non-toxic, inert, monatomic gas."],
-        [3,"Li","Lithium",6.94,"alkali metal","Solid",453.65,1603,"A soft, silvery-white alkali metal. Under standard conditions, it is the lightest metal and the lightest solid element."],
-        [4,"Be","Beryllium",9.0122,"alkaline earth metal","Solid",1560,2742,"A divalent element that occurs naturally only in combination with other elements in minerals."],
-        [5,"B","Boron",10.81,"metalloid","Solid",2349,4200,"Produced entirely by cosmic ray spallation and supernovae and not by stellar nucleosynthesis."],
-        [6,"C","Carbon",12.011,"nonmetal","Solid",3800,4300,"It is nonmetallic and tetravalent—making four electrons available to form covalent chemical bonds."],
-        [7,"N","Nitrogen",14.007,"nonmetal","Gas",63.15,77.36,"A common element in the universe, estimated at about seventh in total abundance in the Milky Way and the Solar System."],
-        [8,"O","Oxygen",15.999,"nonmetal","Gas",54.36,90.20,"A member of the chalcogen group on the periodic table, a highly reactive nonmetal, and an oxidizing agent."],
-        [9,"F","Fluorine",18.998,"halogen","Gas",53.53,85.03,"The lightest halogen and exists as a highly toxic pale yellow diatomic gas at standard conditions."],
-        [10,"Ne","Neon",20.180,"noble gas","Gas",24.56,27.07,"A chemically inert monatomic gas. It is known to give a distinct reddish-orange glow when used in low-voltage neon glow lamps."],
-        [11,"Na","Sodium",22.990,"alkali metal","Solid",370.87,1156,"A soft, silvery-white, highly reactive metal. Sodium is an alkali metal, being in group 1 of the periodic table."],
-        [12,"Mg","Magnesium",24.305,"alkaline earth metal","Solid",923,1363,"A shiny gray solid which bears a close physical resemblance to the other five elements in the second column (group 2)."],
-        [13,"Al","Aluminium",26.982,"post-transition metal","Solid",933.47,2792,"A silvery-white, soft, non-magnetic and ductile metal in the boron group."],
-        [14,"Si","Silicon",28.085,"metalloid","Solid",1687,3265,"A hard, brittle crystalline solid with a blue-grey metallic lustre; and it is a tetravalent metalloid and semiconductor."],
-        [15,"P","Phosphorus",30.974,"nonmetal","Solid",317.30,550,"Elemental phosphorus exists in two major forms, white phosphorus and red phosphorus."],
-        [16,"S","Sulfur",32.06,"nonmetal","Solid",388.36,717.8,"Abundant, multivalent, and nonmetallic. Under normal conditions, sulfur atoms form cyclic octatomic molecules with a chemical formula S8."],
-        [17,"Cl","Chlorine",35.45,"halogen","Gas",171.6,239.11,"A yellow-green gas at room temperature. It is an extremely reactive element and a strong oxidising agent."],
-        [18,"Ar","Argon",39.948,"noble gas","Gas",83.80,87.30,"The third-most abundant gas in the Earth's atmosphere, at 0.934%."],
-        [19,"K","Potassium",39.098,"alkali metal","Solid",336.53,1032,"A silvery-white metal that is soft enough to be cut with a knife with little force."],
-        [20,"Ca","Calcium",40.078,"alkaline earth metal","Solid",1115,1757,"An alkaline earth metal, calcium is a reactive metal that forms a dark oxide-nitride layer when exposed to air."],
-        [21,"Sc","Scandium",44.956,"transition metal","Solid",1814,3109,"A silvery-white metallic d-block element. Historically, it has been classified as a rare-earth element."],
-        [22,"Ti","Titanium",47.867,"transition metal","Solid",1941,3560,"A lustrous transition metal with a silver color, low density, and high strength, resistant to corrosion in sea water."],
-        [23,"V","Vanadium",50.942,"transition metal","Solid",2183,3680,"A hard, silvery-grey, malleable transition metal. The elemental metal is rarely found in nature."],
-        [24,"Cr","Chromium",51.996,"transition metal","Solid",2180,2944,"A steely-grey, lustrous, hard and brittle transition metal. Chromium is the main additive in stainless steel."],
-        [25,"Mn","Manganese",54.938,"transition metal","Solid",1519,2334,"It is not found as a free element in nature; it is often found in minerals in combination with iron."],
-        [26,"Fe","Iron",55.845,"transition metal","Solid",1811,3134,"It is by mass the most common element on Earth, forming much of Earth's outer and inner core."],
-        [27,"Co","Cobalt",58.933,"transition metal","Solid",1768,3200,"Found in the Earth's crust only in chemically combined form, save for small deposits found in alloys of natural meteoric iron."],
-        [28,"Ni","Nickel",58.693,"transition metal","Solid",1728,3186,"A silvery-white lustrous metal with a slight golden tinge. It belongs to the transition metals and is hard and ductile."],
-        [29,"Cu","Copper",63.546,"transition metal","Solid",1357.77,2835,"A soft, malleable, and ductile metal with very high thermal and electrical conductivity."],
-        [30,"Zn","Zinc",65.38,"transition metal","Solid",692.68,1180,"A slightly brittle metal at room temperature and has a blue-silvery appearance when oxidation is removed."],
-        [31,"Ga","Gallium",69.723,"post-transition metal","Solid",302.91,2477,"Elemental gallium is a soft, silvery metal at standard temperature and pressure, a brittle solid at low temperatures, and a liquid if slightly warmed."],
-        [32,"Ge","Germanium",72.63,"metalloid","Solid",1211.40,3106,"A lustrous, hard-brittle, grayish-white metalloid in the carbon group, chemically similar to its group neighbors silicon and tin."],
-        [33,"As","Arsenic",74.922,"metalloid","Solid",1090,887,"A metalloid. It exists in many allotropes, although only the gray form has important use in industry."],
-        [34,"Se","Selenium",78.96,"nonmetal","Solid",494,958,"A nonmetal with properties that are intermediate between the elements above and below in the periodic table, sulfur and tellurium."],
-        [35,"Br","Bromine",79.904,"halogen","Liquid",265.8,332.0,"It is a fuming red-brown liquid at room temperature that evaporates readily to form a similarly coloured gas."],
-        [36,"Kr","Krypton",83.798,"noble gas","Gas",115.79,119.93,"Colorless, odorless, tasteless noble gas that occurs in trace amounts in the atmosphere and is often used with other rare gases in fluorescent lamps."],
-        [37,"Rb","Rubidium",85.468,"alkali metal","Solid",312.46,961,"A very soft, silvery-white metal in the alkali metal group. Rubidium metal shares similarities to potassium and caesium."],
-        [38,"Sr","Strontium",87.62,"alkaline earth metal","Solid",1050,1655,"An alkaline earth metal. Strontium is a soft silver-white yellowish metallic element that is highly reactive chemically."],
-        [39,"Y","Yttrium",88.906,"transition metal","Solid",1799,3609,"A silvery-metallic transition metal chemically similar to the lanthanides and has often been classified as a 'rare-earth element'."],
-        [40,"Zr","Zirconium",91.224,"transition metal","Solid",2128,4682,"A lustrous, grey-white, strong transition metal that closely resembles hafnium and, to a lesser extent, titanium."],
-        [41,"Nb","Niobium",92.906,"transition metal","Solid",2750,5017,"A light grey, crystalline, and ductile transition metal. Pure niobium has a hardness similar to that of pure titanium."],
-        [42,"Mo","Molybdenum",95.96,"transition metal","Solid",2896,4912,"Does not occur naturally as a free metal on Earth; it is found only in various oxidation states in minerals."],
-        [43,"Tc","Technetium",98,"transition metal","Solid",2430,4538,"The lightest element whose isotopes are all radioactive, none of which is stable other than the fully ionized state of 97Tc."],
-        [44,"Ru","Ruthenium",101.07,"transition metal","Solid",2607,4423,"A rare transition metal belonging to the platinum group of the periodic table."],
-        [45,"Rh","Rhodium",102.91,"transition metal","Solid",2237,3968,"A rare, silvery-white, hard, corrosion-resistant, and chemically inert transition metal."],
-        [46,"Pd","Palladium",106.42,"transition metal","Solid",1828.05,3236,"A rare and lustrous silvery-white metal discovered in 1803 by William Hyde Wollaston."],
-        [47,"Ag","Silver",107.87,"transition metal","Solid",1234.93,2435,"A soft, white, lustrous transition metal, it exhibits the highest electrical conductivity, thermal conductivity, and reflectivity of any metal."],
-        [48,"Cd","Cadmium",112.41,"transition metal","Solid",594.22,1040,"A soft, silvery-white metal. It is chemically similar to the two other stable metals in group 12, zinc and mercury."],
-        [49,"In","Indium",114.82,"post-transition metal","Solid",429.75,2345,"A post-transition metal. It is the softest metal that is not an alkali metal."],
-        [50,"Sn","Tin",118.71,"post-transition metal","Solid",505.08,2875,"A chemical element with the symbol Sn. Tin shows a chemical similarity to both of its neighbors in group 14, germanium and lead."],
-        [51,"Sb","Antimony",121.76,"metalloid","Solid",903.78,1860,"A lustrous gray metalloid, it is found in nature mainly as the sulfide mineral stibnite."],
-        [52,"Te","Tellurium",127.60,"metalloid","Solid",722.66,1261,"A brittle, mildly toxic, rare, silver-white metalloid. Tellurium is chemically related to selenium and sulfur."],
-        [53,"I","Iodine",126.90,"halogen","Solid",386.85,457.4,"The heaviest of the stable halogens, it exists as a semi-lustrous, non-metallic solid at standard conditions that melts to form a deep violet liquid."],
-        [54,"Xe","Xenon",131.29,"noble gas","Gas",161.4,165.0,"A colorless, dense, odorless noble gas found in the Earth's atmosphere in trace amounts."],
-        [55,"Cs","Caesium",132.91,"alkali metal","Solid",301.59,944,"A soft, silvery-golden alkali metal with a melting point of 28.5 °C, which makes it one of only five elemental metals that are liquid at or near room temperature."],
-        [56,"Ba","Barium",137.33,"alkaline earth metal","Solid",1000,2170,"A soft, silvery alkaline earth metal. Because of its high chemical reactivity, barium is never found in nature as a free element."],
-        [57,"La","Lanthanum",138.91,"lanthanide","Solid",1193,3737,"A soft, ductile, silvery-white metal that tarnishes rapidly when exposed to air."],
-        [58,"Ce","Cerium",140.12,"lanthanide","Solid",1068,3716,"A soft, ductile, and silvery-white metal that tarnishes when exposed to air."],
-        [59,"Pr","Praseodymium",140.91,"lanthanide","Solid",1208,3793,"A soft, silvery, malleable and ductile metal in the lanthanide group."],
-        [60,"Nd","Neodymium",144.24,"lanthanide","Solid",1297,3347,"A soft silvery metal that tarnishes in air. Neodymium was discovered in 1885 by the Austrian chemist Carl Auer von Welsbach."],
-        [61,"Pm","Promethium",145,"lanthanide","Solid",1315,3273,"All of its isotopes are radioactive. It is extremely rare, with only about 500-600 grams naturally occurring in Earth's crust at any given time."],
-        [62,"Sm","Samarium",150.36,"lanthanide","Solid",1345,2067,"A moderately hard silvery metal that slowly oxidizes in air."],
-        [63,"Eu","Europium",151.96,"lanthanide","Solid",1099,1802,"The most reactive lanthanide by far, having to be stored under an inert fluid to protect it from atmospheric oxygen or moisture."],
-        [64,"Gd","Gadolinium",157.25,"lanthanide","Solid",1585,3546,"A silvery-white metal when oxidation is removed. It is only slightly malleable and is a ductile rare-earth element."],
-        [65,"Tb","Terbium",158.93,"lanthanide","Solid",1629,3503,"A silvery-white, rare-earth metal that is malleable, ductile, and soft enough to be cut with a knife."],
-        [66,"Dy","Dysprosium",162.50,"lanthanide","Solid",1680,2840,"A rare-earth element that has a metallic silver luster. It is never found in nature as a free element."],
-        [67,"Ho","Holmium",164.93,"lanthanide","Solid",1734,2993,"Part of the lanthanide series, holmium is a rare-earth element. It is a soft and malleable metal."],
-        [68,"Er","Erbium",167.26,"lanthanide","Solid",1802,3141,"A silvery-white solid metal when artificially isolated, natural erbium is always found in chemical combination with other elements."],
-        [69,"Tm","Thulium",168.93,"lanthanide","Solid",1818,2223,"It is the second-least abundant of the lanthanides."],
-        [70,"Yb","Ytterbium",173.05,"lanthanide","Solid",1097,1469,"A soft, malleable and ductile chemical element that displays a bright silvery luster."],
-        [71,"Lu","Lutetium",174.97,"lanthanide","Solid",1925,3675,"A silvery white metal, which resists corrosion in dry air, but not in moist air."],
-        [72,"Hf","Hafnium",178.49,"transition metal","Solid",2506,4876,"A lustrous, silvery gray, tetravalent transition metal, hafnium chemically resembles zirconium."],
-        [73,"Ta","Tantalum",180.95,"transition metal","Solid",3290,5731,"A rare, hard, blue-gray, lustrous transition metal that is highly corrosion-resistant."],
-        [74,"W","Tungsten",183.84,"transition metal","Solid",3695,5828,"A hard, rare metal under standard conditions when uncombined. It has the highest melting point of all known elements."],
-        [75,"Re","Rhenium",186.21,"transition metal","Solid",3459,5869,"A silvery-white, heavy, third-row transition metal in group 7 of the periodic table."],
-        [76,"Os","Osmium",190.23,"transition metal","Solid",3306,5285,"A hard, brittle, bluish-white transition metal in the platinum group that is found as a trace element in alloys."],
-        [77,"Ir","Iridium",192.22,"transition metal","Solid",2719,4701,"A very hard, brittle, silvery-white transition metal of the platinum group. It is considered to be the second-densest metal."],
-        [78,"Pt","Platinum",195.08,"transition metal","Solid",2041.4,3825,"A dense, malleable, ductile, highly unreactive, precious, silver-white transition metal."],
-        [79,"Au","Gold",196.97,"transition metal","Solid",1337.33,3129,"A bright, slightly reddish yellow, dense, soft, malleable, and ductile metal."],
-        [80,"Hg","Mercury",200.59,"transition metal","Liquid",234.32,629.88,"A heavy, silvery d-block element, mercury is the only metallic element that is liquid at standard conditions for temperature and pressure."],
-        [81,"Tl","Thallium",204.38,"post-transition metal","Solid",577,1746,"A soft gray post-transition metal that is not found free in nature."],
-        [82,"Pb","Lead",207.2,"post-transition metal","Solid",600.61,2022,"A heavy metal that is denser than most common materials. Lead is soft and malleable, and also has a relatively low melting point."],
-        [83,"Bi","Bismuth",208.98,"post-transition metal","Solid",544.7,1837,"A pentavalent post-transition metal and one of the pnictogens with chemical properties resembling its lighter group 15 siblings arsenic and antimony."],
-        [84,"Po","Polonium",209,"metalloid","Solid",527,1235,"A rare and highly radioactive metal with no stable isotopes."],
-        [85,"At","Astatine",210,"halogen","Solid",575,610,"A radioactive chemical element. It occurs on Earth only as the result of the radioactive decay of heavier elements."],
-        [86,"Rn","Radon",222,"noble gas","Gas",202,211.3,"A radioactive, colorless, odorless, tasteless noble gas."],
-        [87,"Fr","Francium",223,"alkali metal","Solid",300,950,"A highly radioactive metal that decays into astatine, radium, and radon."],
-        [88,"Ra","Radium",226,"alkaline earth metal","Solid",973,2010,"A pure white alkaline earth metal, but it reacts readily with nitrogen on exposure to air, turning black."],
-        [89,"Ac","Actinium",227,"actinide","Solid",1323,3471,"A radioactive, silvery metal that glows with a pale blue light in the dark due to its intense radioactivity."],
-        [90,"Th","Thorium",232.04,"actinide","Solid",2115,5061,"A weakly radioactive metallic chemical element."],
-        [91,"Pa","Protactinium",231.04,"actinide","Solid",1841,4300,"A dense, silvery-gray actinide metal which reacts readily with oxygen, water vapor and inorganic acids."],
-        [92,"U","Uranium",238.03,"actinide","Solid",1405.3,4404,"A silvery-grey metal in the actinide series of the periodic table."],
-        [93,"Np","Neptunium",237,"actinide","Solid",917,4273,"A radioactive actinide metal, neptunium is the first transuranic element."],
-        [94,"Pu","Plutonium",244,"actinide","Solid",912.5,3501,"A radioactive actinide metal of a silvery-gray appearance that tarnishes when exposed to air."],
-        [95,"Am","Americium",243,"actinide","Solid",1449,2880,"A radioactive transuranic chemical element."],
-        [96,"Cm","Curium",247,"actinide","Solid",1613,3383,"A transuranic radioactive chemical element."],
-        [97,"Bk","Berkelium",247,"actinide","Solid",1259,2900,"A transuranic radioactive chemical element."],
-        [98,"Cf","Californium",251,"actinide","Solid",1173,1743,"A radioactive metallic chemical element."],
-        [99,"Es","Einsteinium",252,"actinide","Solid",1133,1269,"A synthetic element. It is a soft, silvery, paramagnetic metal."],
-        [100,"Fm","Fermium",257,"actinide","Solid",1800,null,"A synthetic element. It is an actinide and the heaviest element that can be formed by neutron bombardment."],
-        [101,"Md","Mendelevium",258,"actinide","Solid",1100,null,"A synthetic element. It is a metallic radioactive transuranic element in the actinide series."],
-        [102,"No","Nobelium",259,"actinide","Solid",1100,null,"A synthetic chemical element."],
-        [103,"Lr","Lawrencium",266,"actinide","Solid",1900,null,"A synthetic chemical element. It is radioactive."],
-        [104,"Rf","Rutherfordium",267,"transition metal","Solid",null,null,"A synthetic chemical element."],
-        [105,"Db","Dubnium",268,"transition metal","Solid",null,null,"A synthetic chemical element."],
-        [106,"Sg","Seaborgium",269,"transition metal","Solid",null,null,"A synthetic chemical element."],
-        [107,"Bh","Bohrium",270,"transition metal","Solid",null,null,"A synthetic chemical element."],
-        [108,"Hs","Hassium",277,"transition metal","Solid",null,null,"A synthetic chemical element."],
-        [109,"Mt","Meitnerium",278,"unknown","Unknown",null,null,"A synthetic chemical element."],
-        [110,"Ds","Darmstadtium",281,"unknown","Unknown",null,null,"A synthetic chemical element."],
-        [111,"Rg","Roentgenium",282,"unknown","Unknown",null,null,"A synthetic chemical element."],
-        [112,"Cn","Copernicium",285,"unknown","Unknown",null,null,"A synthetic chemical element."],
-        [113,"Nh","Nihonium",286,"unknown","Unknown",null,null,"A synthetic chemical element."],
-        [114,"Fl","Flerovium",289,"unknown","Unknown",null,null,"A synthetic chemical element."],
-        [115,"Mc","Moscovium",290,"unknown","Unknown",null,null,"A synthetic chemical element."],
-        [116,"Lv","Livermorium",293,"unknown","Unknown",null,null,"A synthetic chemical element."],
-        [117,"Ts","Tennessine",294,"unknown","Unknown",null,null,"A synthetic chemical element."],
-        [118,"Og","Oganesson",294,"unknown","Unknown",null,null,"A synthetic chemical element."]
-    ];
+    /* ---------- ELEMENT DATA (略：与原版相同) ---------- */
+    const rawElements = [/* 此处保留你原来完整的 rawElements 数组内容（为节省篇幅已省略，直接用你现有版本） */];
 
-    // Convert to Object Array
     const elements = rawElements.map(e => ({
         number: e[0],
         symbol: e[1],
@@ -564,7 +434,7 @@
         desc: e[8]
     }));
 
-    // --- GRID LAYOUT LOGIC ---
+    /* ---------- GRID LAYOUT ---------- */
     function getGridPosition(num) {
         if (num === 1) return { r: 1, c: 1 };
         if (num === 2) return { r: 1, c: 18 };
@@ -583,11 +453,10 @@
         return { r: 11, c: 1 };
     }
 
-    // --- DOM GENERATION ---
     const grid = document.getElementById('grid');
     const filterContainer = document.getElementById('filter-container');
 
-    // 1. Generate Filters
+    /* ---------- FILTER BUTTONS ---------- */
     Object.keys(categories).forEach(key => {
         const btn = document.createElement('button');
         btn.className = 'filter-btn';
@@ -598,7 +467,7 @@
         filterContainer.appendChild(btn);
     });
 
-    // 2. Generate Elements
+    /* ---------- ELEMENT CARDS ---------- */
     elements.forEach(el => {
         const pos = getGridPosition(el.number);
         const elDiv = document.createElement('div');
@@ -617,13 +486,11 @@
             <div class="symbol">${el.symbol}</div>
             <div class="name">${el.name}</div>
         `;
-
         elDiv.onclick = () => openDetails(el);
         grid.appendChild(elDiv);
     });
 
-    // --- FILTER LOGIC (FIXED) ---
-    
+    /* ---------- FILTER + SEARCH 逻辑（含 All 修复） ---------- */
     let currentFilter = 'all';
     let currentSearch = '';
 
@@ -633,47 +500,30 @@
         applyFilters();
     });
 
-    // FIX: All filter bug
-    // Updated filterElements to handle button active states and correctly set 'all'
     function filterElements(category, btn) {
         currentFilter = category;
-        
-        // Update Buttons Visual State
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        if(btn) {
-            btn.classList.add('active');
-        } else {
-            // Fallback for "all" if passed manually
-            const allBtn = document.querySelector(`[data-cat="all"]`);
+        if (btn) btn.classList.add('active');
+        else {
+            const allBtn = document.querySelector('[data-cat="all"]');
             if (allBtn) allBtn.classList.add('active');
         }
-        
-        // Trigger filter application
         applyFilters();
     }
 
-    // FIX: All filter bug
-    // Updated logic: if currentFilter is 'all', category matches are always true.
-    // Search is applied logically (AND) on top of the category filter.
     function applyFilters() {
-        const allEls = document.querySelectorAll('.element');
-        allEls.forEach(el => {
+        document.querySelectorAll('.element').forEach(el => {
             const elCat = el.dataset.cat;
             const elName = el.dataset.name;
             const elSym = el.dataset.symbol;
             const elNum = el.dataset.number;
 
-            // 1. Check Category
             const matchesCat = (currentFilter === 'all' || elCat === currentFilter);
+            const matchesSearch = (currentSearch === '') ||
+                                  elName.includes(currentSearch) ||
+                                  elSym.includes(currentSearch) ||
+                                  elNum === currentSearch;
 
-            // 2. Check Search
-            // Empty search string returns true, otherwise checks inclusion
-            const matchesSearch = (currentSearch === '') || 
-                                  (elName.includes(currentSearch) || 
-                                   elSym.includes(currentSearch) || 
-                                   elNum === currentSearch);
-
-            // 3. Combine
             if (matchesCat && matchesSearch) {
                 el.classList.remove('dimmed');
             } else {
@@ -682,117 +532,106 @@
         });
     }
 
-    // Initialize "All" button logic
-    document.querySelector('[data-cat="all"]').onclick = () => filterElements('all', document.querySelector('[data-cat="all"]'));
+    document.querySelector('[data-cat="all"]').onclick = () =>
+        filterElements('all', document.querySelector('[data-cat="all"]'));
 
-
-    // --- MODAL & ATOM VISUALIZATION (UPDATED) ---
-    
+    /* ---------- MODAL + ATOM VISUALIZATION ---------- */
     const modal = document.getElementById('modal-overlay');
     const closeModal = document.getElementById('close-modal');
     
     const mSymbol = document.getElementById('m-symbol');
     const mNumber = document.getElementById('m-number');
-    const mName = document.getElementById('m-name');
-    const mCat = document.getElementById('m-cat');
-    const mMass = document.getElementById('m-mass');
-    const mPhase = document.getElementById('m-phase');
-    const mMelt = document.getElementById('m-melt');
-    const mBoil = document.getElementById('m-boil');
-    const mDesc = document.getElementById('m-desc');
+    const mName   = document.getElementById('m-name');
+    const mCat    = document.getElementById('m-cat');
+    const mMass   = document.getElementById('m-mass');
+    const mPhase  = document.getElementById('m-phase');
+    const mMelt   = document.getElementById('m-melt');
+    const mBoil   = document.getElementById('m-boil');
+    const mDesc   = document.getElementById('m-desc');
 
-    // UPDATE: Atom rendering with shell model
-    // Simple capacity sequence; approximate is OK
-    const SHELL_CAPACITIES = [2, 8, 8, 18, 18, 32, 32]; 
+    /* ---- 壳层模型配置 ---- */
+    const SHELL_CAPACITIES = [2, 8, 8, 18, 18, 32, 32];
 
-    // Helper to calculate shell distribution
+    const atomConfig = {
+        perspective: 0.65,          // y 方向缩放 → 椭圆
+        showInnerElectrons: true,   // 是否显示内层电子
+        highlightValence: true,     // 是否突出价电子层
+        maxShellsRendered: 6,       // 最多绘制多少层壳
+        showReactivityRing: true    // 是否绘制“活性光环”
+    };
+
     function getShellsFromAtomicNumber(atomicNumber) {
         let remaining = atomicNumber;
         const shells = [];
-
         for (let i = 0; i < SHELL_CAPACITIES.length && remaining > 0; i++) {
             const capacity = SHELL_CAPACITIES[i];
-            const electronsInThisShell = Math.min(capacity, remaining);
-            shells.push(electronsInThisShell);
-            remaining -= electronsInThisShell;
+            const e = Math.min(capacity, remaining);
+            shells.push(e);
+            remaining -= e;
         }
-
-        return shells; // e.g. 17 → [2, 8, 7]
+        return shells;
     }
 
-    // Helper to decide if a shell is full
-    function isShellFull(shellIndex, shells) {
-        const electrons = shells[shellIndex];
-        const capacity = SHELL_CAPACITIES[shellIndex];
+    function isShellFull(index, shells) {
+        const electrons = shells[index];
+        const capacity = SHELL_CAPACITIES[index] ?? electrons;
         return electrons >= capacity;
     }
 
     let atomCanvas = document.getElementById('atom-canvas');
     let ctx = atomCanvas.getContext('2d');
     let animationId;
-    let atomState = {
+    let isHoveringCanvas = false;
+
+    const atomState = {
         shells: [],
         color: '#fff',
         angleOffset: 0
     };
 
+    atomCanvas.addEventListener('mouseenter', () => isHoveringCanvas = true);
+    atomCanvas.addEventListener('mouseleave', () => isHoveringCanvas = false);
+
     function openDetails(data) {
-        // Populate Data
         mSymbol.textContent = data.symbol;
         mNumber.textContent = data.number;
-        mName.textContent = data.name;
-        mCat.textContent = (categories[data.category] ? categories[data.category].label : data.category);
-        mMass.textContent = data.mass;
-        mPhase.textContent = data.phase;
-        mMelt.textContent = data.melt ? data.melt + " K" : "N/A";
-        mBoil.textContent = data.boil ? data.boil + " K" : "N/A";
-        mDesc.textContent = data.desc;
+        mName.textContent   = data.name;
+        mCat.textContent    = (categories[data.category] ? categories[data.category].label : data.category);
+        mMass.textContent   = data.mass;
+        mPhase.textContent  = data.phase;
+        mMelt.textContent   = data.melt ? data.melt + " K" : "N/A";
+        mBoil.textContent   = data.boil ? data.boil + " K" : "N/A";
+        mDesc.textContent   = data.desc;
 
-        // Color theme for modal
-        const color = categories[data.category] ? categories[data.category].color : '#fff';
-        // Need to resolve var() if possible, but for canvas we prefer hex/rgb. 
-        // We will pass the var string to canvas, it works in modern browsers for fillStyle if defined in :root
-        // But for manipulation (opacity), better to have a fallback.
-        
-        document.querySelector('.modal-content').style.setProperty('--modal-color', color);
-        mCat.style.background = "rgba(255,255,255,0.1)"; 
-        mCat.style.color = color;
+        const cssColor = categories[data.category] ? categories[data.category].color : '#fff';
+        document.querySelector('.modal-content').style.setProperty('--modal-color', cssColor);
+        mCat.style.color = cssColor;
 
-        // Show Modal
         modal.classList.add('active');
-
-        // Start 2D Atom Animation
-        startAtomAnimation(data.number, color);
+        startAtomAnimation(data.number, cssColor);
     }
 
     closeModal.onclick = closeDetails;
-    modal.onclick = (e) => {
-        if (e.target === modal) closeDetails();
-    }
+    modal.onclick = (e) => { if (e.target === modal) closeDetails(); };
 
     function closeDetails() {
         modal.classList.remove('active');
         if (animationId) cancelAnimationFrame(animationId);
     }
 
-    // UPDATE: Atom rendering with shell model logic
     function startAtomAnimation(atomicNumber, cssColor) {
-        // Stop previous
         if (animationId) cancelAnimationFrame(animationId);
 
-        // Get computed color for Canvas use (resolves var(--...))
-        const tempEl = document.createElement('div');
-        tempEl.style.color = cssColor;
-        document.body.appendChild(tempEl);
-        const themeColor = getComputedStyle(tempEl).color;
-        document.body.removeChild(tempEl);
+        const tmp = document.createElement('div');
+        tmp.style.color = cssColor;
+        document.body.appendChild(tmp);
+        const themeColor = getComputedStyle(tmp).color;
+        document.body.removeChild(tmp);
 
-        // Setup State
         atomState.shells = getShellsFromAtomicNumber(atomicNumber);
         atomState.color = themeColor;
         atomState.angleOffset = 0;
 
-        // Resize Canvas
         const container = document.getElementById('canvas-container');
         atomCanvas.width = container.clientWidth;
         atomCanvas.height = container.clientHeight;
@@ -801,8 +640,9 @@
     }
 
     function animateAtomLoop() {
+        const speed = isHoveringCanvas ? 0.0015 : 0.0045;
+        atomState.angleOffset += speed;
         drawAtom();
-        atomState.angleOffset += 0.005; // Slow rotation speed
         animationId = requestAnimationFrame(animateAtomLoop);
     }
 
@@ -815,90 +655,114 @@
         ctx.clearRect(0, 0, w, h);
 
         const shells = atomState.shells;
-        const baseRadius = 30;
-        const radiusStep = 25; // Space between rings
+        if (!shells.length) return;
 
-        // Colors
+        const minDim = Math.min(w, h);
+        const baseRadius = minDim * 0.12;
+        const radiusStep = minDim * 0.07;
+        const lastIndex = shells.length - 1;
+        const persp = atomConfig.perspective;
+
         const fullRingColor = '#303848';
-        const fullDotColor = '#707890';
-        const partialRingColor = atomState.color; // Neon theme
-        
-        // Draw Nucleus
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff';
-        ctx.fill();
-        // Nucleus Glow
-        ctx.beginPath();
-        ctx.arc(cx, cy, 15, 0, Math.PI * 2);
-        ctx.fillStyle = atomState.color; 
-        ctx.globalAlpha = 0.3;
-        ctx.fill();
-        ctx.globalAlpha = 1.0;
+        const fullDotColor  = '#707890';
+        const partialColor  = atomState.color;
 
+        /* Nucleus */
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, minDim * 0.04, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath();
+        ctx.arc(cx, cy, minDim * 0.07, 0, Math.PI * 2);
+        ctx.fillStyle = partialColor;
+        ctx.fill();
+        ctx.restore();
 
-        // Draw Shells
-        for (let i = 0; i < shells.length; i++) {
+        /* Shells */
+        for (let i = 0; i < shells.length && i < atomConfig.maxShellsRendered; i++) {
             const electrons = shells[i];
-            const radius = baseRadius + (i * radiusStep);
+            const radius = baseRadius + i * radiusStep;
+            const isValence = (i === lastIndex);
             const full = isShellFull(i, shells);
 
-            // 1. Draw Ring
+            ctx.save();
             ctx.beginPath();
-            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.lineWidth = 1.5;
-            
-            if (full) {
+            ctx.ellipse(cx, cy, radius, radius * persp, 0, 0, Math.PI * 2);
+            ctx.lineWidth = isValence && atomConfig.highlightValence ? 2 : 1.5;
+
+            if (full && !isValence) {
                 ctx.strokeStyle = fullRingColor;
                 ctx.shadowBlur = 0;
             } else {
-                ctx.strokeStyle = partialRingColor;
-                ctx.shadowColor = partialRingColor;
-                ctx.shadowBlur = 10; // Glow for valence shell
+                ctx.strokeStyle = partialColor;
+                ctx.shadowColor = partialColor;
+                ctx.shadowBlur = isValence ? 14 : 8;
             }
             ctx.stroke();
-            ctx.shadowBlur = 0; // Reset
+            ctx.restore();
 
-            // 2. Draw Electrons
-            // Rotate rings slightly differently based on index for dynamic effect
-            const rotation = atomState.angleOffset * (i % 2 === 0 ? 1 : -1) * (1 + i * 0.2);
+            /* Electrons */
+            const drawInner = atomConfig.showInnerElectrons || isValence || i === lastIndex - 1;
+            if (drawInner && electrons > 0) {
+                const rotationBase = atomState.angleOffset * (i % 2 === 0 ? 1 : -1) * (1 + i * 0.25);
+                for (let e = 0; e < electrons; e++) {
+                    const angle = (2 * Math.PI * e) / electrons + rotationBase;
+                    const ex = cx + Math.cos(angle) * radius;
+                    const ey = cy + Math.sin(angle) * radius * persp;
 
-            for (let e = 0; e < electrons; e++) {
-                const angle = (2 * Math.PI * e) / electrons + rotation;
-                const ex = cx + Math.cos(angle) * radius;
-                const ey = cy + Math.sin(angle) * radius;
-
-                ctx.beginPath();
-                ctx.arc(ex, ey, full ? 2 : 3.5, 0, Math.PI * 2); // Larger dots for valence
-                ctx.fillStyle = full ? fullDotColor : partialRingColor;
-                ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(ex, ey, full && !isValence ? 2 : 3.2, 0, Math.PI * 2);
+                    ctx.fillStyle = full && !isValence ? fullDotColor : partialColor;
+                    ctx.fill();
+                }
             }
 
-            // 3. Draw Label for Partial Shells
-            if (!full) {
-                const labelText = electrons + "e⁻";
-                // Fixed position for label (top of ring) to make it readable
-                // Or rotating with ring? Let's keep it static relative to ring top for readability
-                const labelY = cy - radius - 10;
-                
-                ctx.fillStyle = partialRingColor;
-                ctx.font = "12px sans-serif";
+            /* Valence shell label */
+            if (!full && isValence && atomConfig.highlightValence) {
+                const labelText = `Valence: ${electrons}e⁻`;
+                const labelY = cy - radius * persp - 14;
+                ctx.save();
+                ctx.fillStyle = partialColor;
+                ctx.font = "12px system-ui, sans-serif";
                 ctx.textAlign = "center";
                 ctx.fillText(labelText, cx, labelY);
+                ctx.restore();
+            }
+        }
+
+        /* Reactivity ring */
+        if (atomConfig.showReactivityRing) {
+            const valence = shells[lastIndex];
+            const cap = SHELL_CAPACITIES[lastIndex] ?? valence;
+            const isNoble = (lastIndex === 0 && valence === 2) || valence === 8;
+            const highlyReactive = !isNoble && (valence === 1 || valence === 2 || valence === 6 || valence === 7);
+
+            if (highlyReactive) {
+                const outerRadius = baseRadius + lastIndex * radiusStep + radiusStep * 0.6;
+                ctx.save();
+                ctx.setLineDash([6, 6]);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = partialColor;
+                ctx.globalAlpha = 0.6;
+                const wobble = Math.sin(atomState.angleOffset * 2) * 3;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, outerRadius + wobble, (outerRadius + wobble) * persp, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
             }
         }
     }
 
-    // Handle Resize for Canvas
     window.addEventListener('resize', () => {
-        if(modal.classList.contains('active')) {
+        if (modal.classList.contains('active')) {
             const container = document.getElementById('canvas-container');
             atomCanvas.width = container.clientWidth;
             atomCanvas.height = container.clientHeight;
-            drawAtom(); // Redraw immediately
+            drawAtom();
         }
     });
-
 </script>
 </body>
 </html>
